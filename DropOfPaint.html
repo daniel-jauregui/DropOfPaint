@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mezclador de Pinturas - Precisión Mejorada</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1100px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(90deg, #4166F5 0%, #2A52BE 100%);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 300;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 30px;
+        }
+        
+        .color-selection {
+            flex: 1;
+            min-width: 300px;
+            padding: 20px;
+        }
+        
+        .results {
+            flex: 1;
+            min-width: 300px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .section-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .input-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4166F5;
+        }
+        
+        .color-preview {
+            width: 100%;
+            height: 100px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #333;
+            transition: background-color 0.3s ease;
+        }
+        
+        .color-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .color-input:focus {
+            border-color: #4166F5;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(65, 102, 245, 0.2);
+        }
+        
+        .rgb-inputs {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .rgb-inputs input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        
+        button {
+            background: #4166F5;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background: #2A52BE;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(65, 102, 245, 0.4);
+        }
+        
+        .recipe-container {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-top: 20px;
+            flex-grow: 1;
+        }
+        
+        .paint-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid;
+            transition: transform 0.3s ease;
+        }
+        
+        .paint-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .color-sample {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            margin-right: 15px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .paint-details {
+            flex-grow: 1;
+        }
+        
+        .paint-name {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        
+        .paint-notes {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .drops {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #4166F5;
+            min-width: 80px;
+            text-align: right;
+        }
+        
+        .instructions {
+            background: #e3f2fd;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 25px;
+            font-size: 0.95rem;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 12px;
+            color: #1e88e5;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+        }
+        
+        .palette {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 25px 0;
+        }
+        
+        .palette-item {
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .palette-item:hover {
+            transform: scale(1.05);
+        }
+        
+        .palette-color {
+            height: 40px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .palette-color:hover {
+            transform: scale(1.1);
+        }
+        
+        .palette-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .palette-hex {
+            font-size: 0.8rem;
+            color: #666;
+            font-family: monospace;
+        }
+        
+        .drops-info {
+            display: flex;
+            justify-content: space-between;
+            background: #f0f7ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .drops-total {
+            font-weight: bold;
+            color: #4166F5;
+        }
+        
+        .tip {
+            background: #fff8e1;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .accuracy {
+            display: flex;
+            justify-content: space-between;
+            background: #e6f7ff;
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .accuracy-value {
+            font-weight: bold;
+            color: #1890ff;
+        }
+        
+        .color-match {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            border: 1px solid #eee;
+        }
+        
+        .color-box {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .match-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .rgb-inputs {
+                flex-direction: column;
+            }
+            
+            .palette {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .color-match {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+        
+        footer {
+            text-align: center;
+            padding: 25px;
+            background: #f8fafc;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+<header>
+    <h1><i class="fas fa-palette"></i> Mezclador de Pinturas</h1>
+    <p class="subtitle">Algoritmo genético con precisión mejorada</p>
+</header>
+<div class="app-container">
+<div class="color-selection">
+    <h2 class="section-title"><i class="fas fa-eye-dropper"></i> Selección de color</h2>
+
+    <!-- NUEVO SELECTOR -->
+    <div class="input-group">
+        <label for="modoColores">Modo de colores:</label>
+        <select id="modoColores" class="color-input">
+            <option value="primarios">Primarios + Blanco/Negro</option>
+            <option value="todos" selected>Todos los colores</option>
+        </select>
+    </div>
+
+    <div class="input-group">
+                    <label>Previsualización del color:</label>
+                    <div class="color-preview" id="colorPreview" style="background-color: #D6D9EA; color: #333;">#D6D9EA</div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="colorPicker">Selector de color:</label>
+                    <input type="color" id="colorPicker" class="color-input" value="#D6D9EA">
+                </div>
+                
+                <div class="input-group">
+                    <label for="hexInput">Código HEX:</label>
+                    <input type="text" id="hexInput" class="color-input" value="#D6D9EA" placeholder="#RRGGBB">
+                </div>
+                
+                <div class="input-group">
+                    <label>Valores RGB:</label>
+                    <div class="rgb-inputs">
+                        <input type="number" id="rInput" min="0" max="255" placeholder="R" value="214">
+                        <input type="number" id="gInput" min="0" max="255" placeholder="G" value="217">
+                        <input type="number" id="bInput" min="0" max="255" placeholder="B" value="234">
+                    </div>
+                </div>
+                
+                <button id="calculateBtn">
+                    <i class="fas fa-calculator"></i> Calcular Receta
+                </button>
+                
+                <h2 class="section-title"><i class="fas fa-paint-brush"></i> Colores base disponibles</h2>
+                <div class="palette">
+                    <div class="palette-item">
+                        <div class="palette-color" style="background-color: #FFFFFF;"></div>
+                        <div class="palette-label">Blanco</div>
+                        <div class="palette-hex">#FFFFFF</div>
+                    </div>
+                    <div class="palette-item">
+                        <div class="palette-color" style="background-color: #000000;"></div>
+                        <div class="palette-label">Negro</div>
+                        <div class="palette-hex">#000000</div>
+                    </div>
+                    <div class="palette-item">
+                        <div class="palette-color" style="background-color: #FF0000;"></div>
+                        <div class="palette-label">Rojo</div>
+                        <div class="palette-hex">#FF0000</div>
+                    </div>
+                    <div class="palette-item">
+                        <div class="palette-color" style="background-color: #00B500;"></div>
+                        <div class="palette-label">Verde</div>
+                        <div class="palette-hex">#00B500</div>
+                    </div>
+                    <div class="palette-item">
+                        <div class="palette-color" style="background-color: #0047AB;"></div>
+                        <div class="palette-label">Azul</div>
+                        <div class="palette-hex">#0047AB</div>
+                    </div>
+                    <div class="palette-item">
+                        <div class="palette-color" style="background-color: #00EDFF;"></div>
+                        <div class="palette-label">Cyan</div>
+                        <div class="palette-hex">#00EDFF</div>
+                    </div>
+                    <div class="palette-item">
+                        <div class="palette-color" style="background-color: #FF00AB;"></div>
+                        <div class="palette-label">Magenta</div>
+                        <div class="palette-hex">#FF00AB</div>
+                    </div>
+                    <div class="palette-item">
+                        <div class="palette-color" style="background-color: #FFED00;"></div>
+                        <div class="palette-label">Amarillo</div>
+                        <div class="palette-hex">#FFED00</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="results">
+                <h2 class="section-title"><i class="fas fa-clipboard-list"></i> Receta de mezcla</h2>
+                
+                <div class="recipe-container" id="recipeContainer">
+                    <div class="paint-item">
+                        <div class="color-sample" style="background-color: #FFFFFF;"></div>
+                        <div class="paint-details">
+                            <div class="paint-name">Blanco</div>
+                            <div class="paint-notes">Base principal para colores claros</div>
+                        </div>
+                        <div class="drops">25</div>
+                    </div>
+                    
+                    <div class="paint-item">
+                        <div class="color-sample" style="background-color: #0047AB;"></div>
+                        <div class="paint-details">
+                            <div class="paint-name">Azul</div>
+                            <div class="paint-notes">Añade tonos fríos y profundidad</div>
+                        </div>
+                        <div class="drops">4</div>
+                    </div>
+                    
+                    <div class="paint-item">
+                        <div class="color-sample" style="background-color: #FF00AB;"></div>
+                        <div class="paint-details">
+                            <div class="paint-name">Magenta</div>
+                            <div class="paint-notes">Añade matices rojizos y violetas</div>
+                        </div>
+                        <div class="drops">1</div>
+                    </div>
+                    
+                    <div class="paint-item">
+                        <div class="color-sample" style="background-color: #000000;"></div>
+                        <div class="paint-details">
+                            <div class="paint-name">Negro</div>
+                            <div class="paint-notes">Reduce luminosidad y satura</div>
+                        </div>
+                        <div class="drops">1</div>
+                    </div>
+                    
+                    <div class="drops-info">
+                        <div>Total de gotas:</div>
+                        <div class="drops-total">31 gotas</div>
+                    </div>
+                    
+                    <div class="accuracy">
+                        <div>Precisión de color:</div>
+                        <div class="accuracy-value">98.8%</div>
+                    </div>
+                    
+                    <div class="color-match" align="center">
+                        <div>
+                            <div class="match-label">Color Objetivo</div>
+                            <div class="color-box" id="targetColor" style="background-color: #D6D9EA;"></div>
+							<div class="match-label">#D6D9EA</div>
+                        </div>
+                        <i class="fas fa-arrows-alt-h" style="font-size: 1.5rem; color: #4166F5;"></i>
+                        <div>
+                            <div class="match-label">Resultado Mezcla</div>
+                            <div class="color-box" id="resultColor" style="background-color: #D5D8E9;"></div>
+							<div class="match-label">#D5D8E9</div>
+                        </div>
+                    </div>
+                    
+                    <div class="tip">
+                        <i class="fas fa-lightbulb"></i> <strong>Consejo:</strong> Las pinturas acrílicas oscurecen un 10-15% al secar. 
+                        Prueba en una pequeña muestra antes de mezclar grandes cantidades.
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2025 Mezclador de Pinturas Acrílicas | Algoritmo de precisión mejorada</p>
+        </footer>
+    </div>
+<script>
+
+// NUEVA SECCIÓN: Definir paletas
+const paletas = {
+    primarios: {
+        Blanco: { r: 255, g: 255, b: 255 },
+        Negro: { r: 0, g: 0, b: 0 },
+        Rojo: { r: 255, g: 0, b: 0 },
+        Verde: { r: 0, g: 181, b: 0 },
+        Azul: { r: 0, g: 71, b: 171 }
+    },
+    todos: {
+        Blanco: { r: 255, g: 255, b: 255 },
+        Negro: { r: 0, g: 0, b: 0 },
+        Rojo: { r: 255, g: 0, b: 0 },
+        Verde: { r: 0, g: 181, b: 0 },
+        Azul: { r: 0, g: 71, b: 171 },
+        Cyan: { r: 0, g: 237, b: 255 },
+        Magenta: { r: 255, g: 0, b: 171 },
+        Amarillo: { r: 255, g: 237, b: 0 }
+    }
+};
+
+// Usamos esta variable en todo el algoritmo
+let coloresBase = paletas.todos;
+
+// Evento para cambiar el modo de colores
+const modoColores = document.getElementById("modoColores");
+modoColores.addEventListener("change", () => {
+    coloresBase = paletas[modoColores.value];
+});
+
+// Función para esperar a que el DOM esté listo
+    function domReady(callback) {
+        if (document.readyState !== 'loading') {
+            callback();
+        } else {
+            document.addEventListener('DOMContentLoaded', callback);
+        }
+    }
+
+    domReady(function() {
+        // Elementos de la UI (ahora dentro del DOM ready)
+        const colorPicker = document.getElementById('colorPicker');
+        const hexInput = document.getElementById('hexInput');
+        const rInput = document.getElementById('rInput');
+        const gInput = document.getElementById('gInput');
+        const bInput = document.getElementById('bInput');
+        const colorPreview = document.getElementById('colorPreview');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const recipeContainer = document.getElementById('recipeContainer');
+        const targetColorBox = document.getElementById('targetColor');
+        const resultColorBox = document.getElementById('resultColor');
+        
+        // Sincronizar los controles de color
+        function syncColorControls(hexColor) {
+            // Convertir HEX a RGB
+            const rgb = hexToRgb(hexColor);
+            
+            // Actualizar todos los controles
+            colorPicker.value = hexColor;
+            hexInput.value = hexColor;
+            rInput.value = rgb.r;
+            gInput.value = rgb.g;
+            bInput.value = rgb.b;
+            colorPreview.style.backgroundColor = hexColor;
+            colorPreview.textContent = hexColor;
+            targetColorBox.style.backgroundColor = hexColor;
+            targetColorBox.nextElementSibling.textContent = hexColor;
+        }
+
+        // Convertir HEX a RGB
+        function hexToRgb(hex) {
+            if (!hex) return {r: 0, g: 0, b: 0};
+            if (hex.length === 4) { // Formato abreviado #RGB
+                hex = '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+            }
+            let r = parseInt(hex.slice(1, 3), 16) || 0;
+            let g = parseInt(hex.slice(3, 5), 16) || 0;
+            let b = parseInt(hex.slice(5, 7), 16) || 0;
+            return { r, g, b };
+        }
+
+        // Convertir RGB a HEX
+        function rgbToHex({r, g, b}) {
+            r = Math.max(0, Math.min(255, r));
+            g = Math.max(0, Math.min(255, g));
+            b = Math.max(0, Math.min(255, b));
+            return "#" + [r, g, b].map(x => {
+                const hex = x.toString(16);
+                return hex.length === 1 ? "0" + hex : hex;
+            }).join('').toUpperCase();
+        }
+
+        // Convertir RGB a LAB usando el espacio de color CIELAB
+    function rgbToLab({r, g, b}) {
+      r /= 255; g /= 255; b /= 255;
+
+      [r, g, b] = [r, g, b].map(c => c > 0.04045 ? Math.pow((c + 0.055)/1.055, 2.4) : c / 12.92);
+
+      let x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
+      let y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1.00000;
+      let z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
+
+      [x, y, z] = [x, y, z].map(t => t > 0.008856 ? Math.pow(t, 1/3) : (7.787 * t) + 16/116);
+
+      return {
+        l: (116 * y) - 16,
+        a: 500 * (x - y),
+        b: 200 * (y - z)
+      };
+    }
+
+    function deltaE2000(lab1, lab2) {
+      let avgL = (lab1.l + lab2.l) / 2;
+      let c1 = Math.sqrt(lab1.a**2 + lab1.b**2);
+      let c2 = Math.sqrt(lab2.a**2 + lab2.b**2);
+      let avgC = (c1 + c2) / 2;
+      let G = 0.5 * (1 - Math.sqrt(Math.pow(avgC, 7) / (Math.pow(avgC, 7) + Math.pow(25, 7))));
+
+      let a1P = lab1.a * (1 + G);
+      let a2P = lab2.a * (1 + G);
+      let c1P = Math.sqrt(a1P**2 + lab1.b**2);
+      let c2P = Math.sqrt(a2P**2 + lab2.b**2);
+      let avgCP = (c1P + c2P) / 2;
+
+      let h1P = Math.atan2(lab1.b, a1P) * 180 / Math.PI;
+      let h2P = Math.atan2(lab2.b, a2P) * 180 / Math.PI;
+      if (h1P < 0) h1P += 360;
+      if (h2P < 0) h2P += 360;
+
+      let dH = h2P - h1P;
+      if (Math.abs(dH) > 180) dH += (dH > 0 ? -360 : 360);
+      let dHP = 2 * Math.sqrt(c1P * c2P) * Math.sin((dH / 2) * Math.PI / 180);
+
+      let dL = lab2.l - lab1.l;
+      let dC = c2P - c1P;
+
+      let avgH = Math.abs(h1P - h2P) > 180 ? (h1P + h2P + 360) / 2 : (h1P + h2P) / 2;
+      let T = 1 - 0.17 * Math.cos((avgH - 30) * Math.PI / 180) +
+                  0.24 * Math.cos((2 * avgH) * Math.PI / 180) +
+                  0.32 * Math.cos((3 * avgH + 6) * Math.PI / 180) -
+                  0.20 * Math.cos((4 * avgH - 63) * Math.PI / 180);
+
+      let SL = 1 + ((0.015 * Math.pow(avgL - 50, 2)) / Math.sqrt(20 + Math.pow(avgL - 50, 2)));
+      let SC = 1 + 0.045 * avgCP;
+      let SH = 1 + 0.015 * avgCP * T;
+
+      let dTheta = 30 * Math.exp(-Math.pow((avgH - 275) / 25, 2));
+      let RC = 2 * Math.sqrt(Math.pow(avgCP, 7) / (Math.pow(avgCP, 7) + Math.pow(25, 7)));
+      let RT = -RC * Math.sin(2 * dTheta * Math.PI / 180);
+
+      return Math.sqrt(
+        Math.pow(dL / SL, 2) +
+        Math.pow(dC / SC, 2) +
+        Math.pow(dHP / SH, 2) +
+        RT * (dC / SC) * (dHP / SH)
+      );
+    }
+
+    function diferenciaColor(c1, c2) {
+      return deltaE2000(rgbToLab(c1), rgbToLab(c2));
+    }
+
+    function porcentajeSimilitud(c1, c2) {
+      let diferencia = diferenciaColor(c1, c2);
+      let maxDif = 100; // Delta E 2000 va de 0 a ~100
+      return Math.round((1 - (diferencia / maxDif)) * 100);
+    }
+
+    function mezclar(colores) {
+      let total = { r: 0, g: 0, b: 0 };
+      let cantidad = 0;
+      for (let color in colores) {
+        let partes = colores[color];
+        if (coloresBase[color]) {
+          total.r += coloresBase[color].r * partes;
+          total.g += coloresBase[color].g * partes;
+          total.b += coloresBase[color].b * partes;
+          cantidad += partes;
+        }
+      }
+      if (cantidad === 0) return { r: 0, g: 0, b: 0 };
+      return {
+        r: Math.round(total.r / cantidad),
+        g: Math.round(total.g / cantidad),
+        b: Math.round(total.b / cantidad)
+      };
+    }
+
+    function generarIndividuo() {
+      let ind = {};
+      for (let color in coloresBase) {
+        ind[color] = Math.floor(Math.random() * 8);
+      }
+      return ind;
+    }
+
+        // Función para calcular la mezcla genética
+        function calcularMezclaGenetica(objetivo) {
+            const tiempoLimite = 3000; // 3 segundos para demostración
+            const inicio = performance.now();
+            let poblacion = Array.from({ length: 200 }, generarIndividuo);
+            let mejor = null;
+            let mejorSimilitud = 0;
+
+            function iterar() {
+                if (performance.now() - inicio > tiempoLimite) {
+                    mostrarResultado(mejor, objetivo);
+                    return;
+                }
+
+                // Evaluar población
+                poblacion = poblacion.map(ind => {
+                    let mezcla = mezclar(ind);
+                    let sim = porcentajeSimilitud(objetivo, mezcla);
+                    let coloresUsados = Object.values(ind).filter(v => v > 0).length;
+                    return { ...ind, color: mezcla, similitud: sim, usados: coloresUsados };
+                });
+
+                // Ordenar por mejor similitud y menos colores usados
+                poblacion.sort((a, b) => {
+                    if (b.similitud === a.similitud) {
+                        return a.usados - b.usados;
+                    }
+                    return b.similitud - a.similitud;
+                });
+
+                // Actualizar el mejor
+                mejor = poblacion[0];
+                if (mejor.similitud > mejorSimilitud) {
+                    mejorSimilitud = mejor.similitud;
+                    mostrarResultadoIntermedio(mejor, objetivo);
+                }
+
+                // Condición de terminación
+                if (mejor.similitud >= 99.5) {
+                    mostrarResultado(mejor, objetivo);
+                    return;
+                }
+
+                // Selección y reproducción
+                let elite = poblacion.slice(0, 30);
+                let nuevaPoblacion = [...elite];
+
+                while (nuevaPoblacion.length < 200) {
+                    let padre = elite[Math.floor(Math.random() * elite.length)];
+                    let madre = elite[Math.floor(Math.random() * elite.length)];
+
+                    // Cruzamiento
+                    let hijo = {};
+                    for (let color in coloresBase) {
+                        hijo[color] = Math.random() < 0.5 ? padre[color] : madre[color];
+                    }
+
+                    // Mutación
+                    if (Math.random() < 0.7) {
+                        let clave = Object.keys(hijo)[Math.floor(Math.random() * Object.keys(hijo).length)];
+                        hijo[clave] += Math.floor(Math.random() * 5) - 2;
+                        hijo[clave] = Math.max(0, hijo[clave]);
+                    }
+
+                    nuevaPoblacion.push(hijo);
+                }
+
+                poblacion = nuevaPoblacion;
+                setTimeout(iterar, 0);
+            }
+
+            iterar();
+        }
+
+        // Mostrar resultado intermedio
+        function mostrarResultadoIntermedio(mejor, objetivo) {
+            const mixHex = rgbToHex(mejor.color);
+            resultColorBox.style.backgroundColor = mixHex;
+            resultColorBox.nextElementSibling.textContent = mixHex;
+            
+            // Actualizar precisión
+            document.querySelector('.accuracy-value').textContent = `${mejor.similitud}%`;
+        }
+
+        // Mostrar resultado final
+        function mostrarResultado(mejor, objetivo) {
+            const mixHex = rgbToHex(mejor.color);
+            resultColorBox.style.backgroundColor = mixHex;
+            resultColorBox.nextElementSibling.textContent = mixHex;
+            
+            // Actualizar precisión
+            const accuracyElement = document.querySelector('.accuracy-value');
+            if (accuracyElement) {
+                accuracyElement.textContent = `${mejor.similitud}%`;
+            }
+            
+            // Generar HTML para la receta
+            let recipeHTML = '';
+            let totalDrops = 0;
+            
+            // Ordenar colores por cantidad descendente
+            const sortedColors = Object.entries(mejor)
+                .filter(([color, drops]) => color !== 'color' && color !== 'similitud' && color !== 'usados' && drops > 0)
+                .sort((a, b) => b[1] - a[1]);
+            
+            // Crear elementos para cada color en la receta
+            sortedColors.forEach(([color, drops]) => {
+                totalDrops += drops;
+                const colorHex = rgbToHex(coloresBase[color]);
+                
+                recipeHTML += `
+                    <div class="paint-item">
+                        <div class="color-sample" style="background-color: ${colorHex};"></div>
+                        <div class="paint-details">
+                            <div class="paint-name">${color}</div>
+                            <div class="paint-notes">${obtenerDescripcionColor(color)}</div>
+                        </div>
+                        <div class="drops">${drops}</div>
+                    </div>
+                `;
+            });
+            
+            // Añadir información de total de gotas
+            recipeHTML += `
+                <div class="drops-info">
+                    <div>Total de gotas:</div>
+                    <div class="drops-total">${totalDrops} gotas</div>
+                </div>
+                
+                <div class="accuracy">
+                    <div>Precisión de color:</div>
+                    <div class="accuracy-value">${mejor.similitud}%</div>
+                </div>
+                
+                <div class="color-match" align="center">
+                    <div>
+                        <div class="match-label">Color Objetivo</div>
+                        <div class="color-box" id="targetColor" style="background-color: ${rgbToHex(objetivo)};"></div>
+                        <div class="match-label">${rgbToHex(objetivo)}</div>
+                    </div>
+                    <i class="fas fa-arrows-alt-h" style="font-size: 1.5rem; color: #4166F5;"></i>
+                    <div>
+                        <div class="match-label">Resultado Mezcla</div>
+                        <div class="color-box" id="resultColor" style="background-color: ${mixHex};"></div>
+                        <div class="match-label">${mixHex}</div>
+                    </div>
+                </div>
+                
+                <div class="tip">
+                    <i class="fas fa-lightbulb"></i> <strong>Consejo:</strong> Las pinturas acrílicas oscurecen un 10-15% al secar. 
+                    Prueba en una pequeña muestra antes de mezclar grandes cantidades.
+                </div>
+            `;
+            
+            // Actualizar el contenedor de la receta
+            if (recipeContainer) {
+                recipeContainer.innerHTML = recipeHTML;
+            }
+        }
+
+        // Obtener descripción para cada color base
+        function obtenerDescripcionColor(color) {
+            const descripciones = {
+                Blanco: "Base principal para colores claros",
+                Negro: "Reduce luminosidad y satura",
+                Rojo: "Añade tonos cálidos y vibrantes",
+                Verde: "Aporta tonos naturales y frescos",
+                Azul: "Añade tonos fríos y profundidad",
+                Cyan: "Proporciona tonos azulados claros",
+                Magenta: "Añade matices rojizos y violetas",
+                Amarillo: "Brinda luminosidad y tonos cálidos"
+            };
+            return descripciones[color] || "Color base para la mezcla";
+        }
+
+        // Event Listeners (solo si los elementos existen)
+        if (colorPicker) {
+            colorPicker.addEventListener('input', function() {
+                syncColorControls(this.value);
+            });
+        }
+
+        if (hexInput) {
+            hexInput.addEventListener('input', function() {
+                if (this.value.match(/^#[0-9A-Fa-f]{3,6}$/)) {
+                    syncColorControls(this.value);
+                }
+            });
+        }
+
+        if (rInput && gInput && bInput) {
+            [rInput, gInput, bInput].forEach(input => {
+                input.addEventListener('input', function() {
+                    const r = parseInt(rInput.value) || 0;
+                    const g = parseInt(gInput.value) || 0;
+                    const b = parseInt(bInput.value) || 0;
+                    const hex = rgbToHex({ r, g, b });
+                    syncColorControls(hex);
+                });
+            });
+        }
+
+        // Click en colores de la paleta
+        const paletteColors = document.querySelectorAll('.palette-color');
+        if (paletteColors.length > 0) {
+            paletteColors.forEach(colorDiv => {
+                colorDiv.addEventListener('click', function() {
+                    const rgb = window.getComputedStyle(this).backgroundColor.match(/\d+/g);
+                    if (rgb && rgb.length >= 3) {
+                        const hexColor = rgbToHex({
+                            r: parseInt(rgb[0]),
+                            g: parseInt(rgb[1]),
+                            b: parseInt(rgb[2])
+                        });
+                        syncColorControls(hexColor);
+                    }
+                });
+            });
+        }
+
+        // Botón Calcular
+        if (calculateBtn) {
+            calculateBtn.addEventListener('click', function() {
+                this.disabled = true;
+                const originalHTML = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculando...';
+                
+                const hexColor = hexInput.value;
+                const objetivo = hexToRgb(hexColor);
+                
+                // Mostrar mensaje de carga
+                if (recipeContainer) {
+                    recipeContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #4166F5; margin-bottom: 20px;"></i>
+                            <p>Calculando la mejor combinación de colores...</p>
+                            <p>Esto puede tomar unos segundos.</p>
+                        </div>
+                    `;
+                }
+                
+                // Calcular después de un pequeño retraso
+                setTimeout(() => {
+                    calcularMezclaGenetica(objetivo);
+                    this.disabled = false;
+                    this.innerHTML = originalHTML;
+                }, 100);
+            });
+        }
+
+        // Inicializar con el color por defecto
+        syncColorControls('#D6D9EA');
+    });
+</script>
+<span hidden class="accuracy-value">0%</span>
+</body>
+</html>
