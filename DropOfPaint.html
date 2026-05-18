@@ -542,6 +542,11 @@
             color: #1890ff;
         }
         
+        .progress-container {
+            text-align: center;
+            padding: 30px;
+        }
+        
         .color-match {
             display: flex;
             align-items: flex-start;
@@ -656,6 +661,16 @@
                 <i class="fas fa-calculator"></i> Calcular Receta
             </button>
             
+            <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+                <label style="font-size: 0.85rem; color: #666; margin: 0;">Búsqueda:</label>
+                <select id="qualitySelect" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #e1e8ed; font-size: 0.85rem;">
+                    <option value="fast">Rápida</option>
+                    <option value="balanced" selected>Equilibrada</option>
+                    <option value="deep">Exhaustiva</option>
+                    <option value="experimental">Experimental</option>
+                </select>
+            </div>
+            
             <h2 class="section-title"><i class="fas fa-boxes-stacked"></i> Mis colores físicos disponibles</h2>
             <div class="inventory-list" id="inventoryContainer">
                 <!-- Aquí se generan los botones de color -->
@@ -704,20 +719,21 @@
         });
     };
 
-    // Base de datos maestra de los colores
+    // Base de datos maestra de los colores con fuerzas de pigmento
     const catalogoColores = {
-        Blanco:   { r: 255, g: 255, b: 255, activo: true },
-        Negro:    { r: 0,   g: 0,   b: 0,   activo: true },
-        Rojo:     { r: 255, g: 0,   b: 0,   activo: true },
-        Verde:    { r: 0,   g: 181, b: 0,   activo: true },
-        Azul:     { r: 0,   g: 71,  b: 171, activo: true },
-        Cyan:     { r: 0,   g: 237, b: 255, activo: false },
-        Magenta:  { r: 255, g: 0,   b: 171, activo: false },
-        Amarillo: { r: 255, g: 237, b: 0,   activo: true }
+        Blanco:   { r: 255, g: 255, b: 255, fuerza: 0.3, activo: true },
+        Negro:    { r: 20,  g: 20,  b: 20,  fuerza: 6.0, activo: true },
+        Rojo:     { r: 220, g: 30,  b: 30,  fuerza: 1.2, activo: true },
+        Verde:    { r: 30,  g: 140, b: 50,  fuerza: 1.4, activo: true },
+        Azul:     { r: 30,  g: 80,  b: 160, fuerza: 1.3, activo: true },
+        Cyan:     { r: 0,   g: 200, b: 220, fuerza: 1.4, activo: false },
+        Magenta:  { r: 200, g: 30,  b: 120, fuerza: 1.5, activo: false },
+        Amarillo: { r: 255, g: 220, b: 20,  fuerza: 1.0, activo: true }
     };
     
     // Historial de la sesión actual
     let historialSesion = [];
+    let ultimoMejorResultado = null; // Guardar mejor resultado para comparar
 
     function rgbToHex({r, g, b}) {
         r = Math.max(0, Math.min(255, r));
@@ -783,10 +799,72 @@
         let activos = {};
         for(let color in catalogoColores) {
             if(catalogoColores[color].activo) {
-                activos[color] = { r: catalogoColores[color].r, g: catalogoColores[color].g, b: catalogoColores[color].b };
+                activos[color] = { 
+                    r: catalogoColores[color].r, 
+                    g: catalogoColores[color].g, 
+                    b: catalogoColores[color].b,
+                    fuerza: catalogoColores[color].fuerza
+                };
             }
         }
         return activos;
+    }
+    
+    // Sistema de sustitutos: cuando falta un pigmento, usar combinaciones
+    function obtenerSustituto(colorFaltante, disponibles) {
+        const mapa = {
+            'Rojo': ['Magenta', 'Amarillo'],
+            'Verde': ['Cyan', 'Amarillo'],
+            'Azul': ['Cyan', 'Magenta'],
+            'Amarillo': ['Blanco', 'Rojo'],
+            'Magenta': ['Rojo', 'Azul'],
+            'Cyan': ['Azul', 'Verde']
+        };
+        if (mapa[colorFaltante]) {
+            for (let s of mapa[colorFaltante]) {
+                if (disponibles[s]) return s;
+            }
+        }
+        return null;
+    }
+    
+    // Mezcla con modelo físico: considera fuerza de pigmentos
+    function mezclar(colores, basesActivas) {
+        let pesoTotal = 0;
+        let r = 0, g = 0, b = 0;
+        
+        for (let color in colores) {
+            let partes = colores[color];
+            if (basesActivas[color] && partes > 0) {
+                // Peso = cantidad / fuerza (pigmentos fuertes necesitan menos)
+                const peso = partes / Math.max(0.1, basesActivas[color].fuerza);
+                r += basesActivas[color].r * peso;
+                g += basesActivas[color].g * peso;
+                b += basesActivas[color].b * peso;
+                pesoTotal += peso;
+            }
+        }
+        
+        if (pesoTotal === 0) return { r: 255, g: 255, b: 255 };
+        
+        // Resultado con factor de oscurecimiento (mezclar oscurece)
+        let resultado = {
+            r: Math.round((r / pesoTotal) * 0.95),
+            g: Math.round((g / pesoTotal) * 0.95),
+            b: Math.round((b / pesoTotal) * 0.95)
+        };
+        
+        // Efecto del negro: reduce luminosidad
+        if (colores['Negro'] && colores['Negro'] > 0) {
+            const total = Object.values(colores).reduce((a, v) => a + v, 0);
+            const propNegro = colores['Negro'] / total;
+            const factor = 1 - (propNegro * 0.4);
+            resultado.r = Math.round(resultado.r * factor);
+            resultado.g = Math.round(resultado.g * factor);
+            resultado.b = Math.round(resultado.b * factor);
+        }
+        
+        return resultado;
     }
 
     function obtenerSugerenciaFisica({r, g, b}) {
@@ -843,6 +921,25 @@
             Amarillo: "Aumenta la luminosidad y calidez de la mezcla"
         };
         return notas[color] || "Pintura base para la mezcla.";
+    }
+    
+    // Función para simplificar receta (disponible globalmente)
+    function simplificarReceta(receta, maxGotas = 30) {
+        const gotas = Object.entries(receta).filter(([_, v]) => v > 0);
+        if (gotas.length === 0) return receta;
+        
+        const total = Object.values(receta).reduce((a, b) => a + b, 0);
+        if (total <= maxGotas) return receta;
+        
+        const factor = Math.ceil(total / maxGotas);
+        const simplificada = {};
+        
+        for (let [color, valor] of gotas) {
+            const nuevoValor = Math.max(2, Math.round(valor / factor));
+            simplificada[color] = nuevoValor;
+        }
+        
+        return simplificada;
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -1070,21 +1167,6 @@ renderInventoryUI();
             return Math.max(0, Math.min(100, parseFloat(sim.toFixed(1))));
         }
 
-        function mezclar(colores, basesActivas) {
-            let total = { r: 0, g: 0, b: 0 }; let cantidad = 0;
-            for (let color in colores) {
-                let partes = colores[color];
-                if (basesActivas[color] && partes > 0) {
-                    total.r += basesActivas[color].r * partes;
-                    total.g += basesActivas[color].g * partes;
-                    total.b += basesActivas[color].b * partes;
-                    cantidad += partes;
-                }
-            }
-            if (cantidad === 0) return { r: 255, g: 255, b: 255 };
-            return { r: Math.round(total.r / cantidad), g: Math.round(total.g / cantidad), b: Math.round(total.b / cantidad) };
-        }
-
         function generarIndividuo(basesActivas) {
             let ind = {};
             for (let color in basesActivas) {
@@ -1101,22 +1183,47 @@ renderInventoryUI();
                     b: parseInt(bInput.value) || 0
                 };
                 
+                const calidad = document.getElementById('qualitySelect')?.value || 'balanced';
+                const iteraciones = { fast: 5, balanced: 10, deep: 20, experimental: 40 }[calidad] || 10;
+                
+                // Mostrar progreso inicial
+                const recipeContainer = document.getElementById('recipeContainer');
                 if(recipeContainer) {
-                    recipeContainer.innerHTML = '<p style="text-align: center; color: #4166F5; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Ejecutando Algoritmo Genético de Alta Precisión...</p>';
+                    recipeContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px;">
+                            <p style="color: #4166F5; font-size: 1.1rem; margin-bottom: 20px;">
+                                <i class="fas fa-cog fa-spin"></i> Ejecutando Algoritmo Genético
+                            </p>
+                            <div style="width: 80%; max-width: 300px; height: 10px; background: #e9ecef; border-radius: 5px; margin: 0 auto; overflow: hidden;">
+                                <div id="progressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #4166F5, #2A52BE); transition: width 0.2s ease;"></div>
+                            </div>
+                            <p id="progressText" style="color: #666; font-size: 0.9rem; margin-top: 12px;">Preparando...</p>
+                        </div>
+                    `;
                 }
                 
                 setTimeout(() => {
-                    calcularMezclaGenetica(targetRGB);
+                    calcularMezclaGenetica(targetRGB, calidad);
                 }, 50);
             });
         }
 
-        function calcularMezclaGenetica(objetivo) {
+function calcularMezclaGenetica(objetivo, calidad = 'balanced') {
             const basesActivas = obtenerColoresActivos();
+            
+            // Configuración según calidad
+            const config = {
+                fast: { iteraciones: 5, generaciones: 400, tamPoblacion: 300, maxTime: 2000 },
+                balanced: { iteraciones: 10, generaciones: 600, tamPoblacion: 400, maxTime: 4000, autoConverge: true },
+                deep: { iteraciones: 20, generaciones: 800, tamPoblacion: 500, maxTime: 8000 },
+                experimental: { iteraciones: 40, generaciones: 1600, tamPoblacion: 600, maxTime: 15000 }
+            };
+            
+            const { iteraciones, generaciones, tamPoblacion, maxTime, autoConverge } = config[calidad];
             
             if(Object.keys(basesActivas).length === 0) {
                 if(recipeContainer) {
-                    recipeContainer.innerHTML = '<p style="text-align: center; color: #d9534f; padding: 20px;"><i class="fas fa-exclamation-triangle"></i> Por favor, selecciona al menos un color físico disponible en los botones.</p>';
+                    recipeContainer.innerHTML = '<p style="text-align: center; color: #d9534f; padding: 20px;"><i class="fas fa-exclamation-triangle"></i> Por favor, selecciona al menos una pintura.</p>';
                 }
                 return;
             }
@@ -1159,11 +1266,14 @@ renderInventoryUI();
 
             function ejecutarUnaIteracion() {
                 return new Promise((resolve) => {
-                    const generacionesMax = 600;
-                    let poblacion = Array.from({ length: 400 }, () => generarIndividuo(basesActivas));
+                    let poblacion = Array.from({ length: tamPoblacion }, () => generarIndividuo(basesActivas));
                     let mejor = null;
+                    const startTime = Date.now();
 
-                    for (let g = 0; g < generacionesMax; g++) {
+                    for (let g = 0; g < generaciones; g++) {
+                        // Verificar tiempo cada 100 generaciones
+                        if (g % 100 === 0 && Date.now() - startTime > maxTime) break;
+                        
                         poblacion = poblacion.map(ind => {
                             let mezcla = mezclar(ind, basesActivas);
                             let sim = porcentajeSimilitud(objetivo, mezcla);
@@ -1179,18 +1289,15 @@ renderInventoryUI();
                         let elite = poblacion.slice(0, 50);
                         let nuevaPoblacion = elite.map(e => ({...e.ind}));
 
-                        while (nuevaPoblacion.length < 400) {
+                        while (nuevaPoblacion.length < tamPoblacion) {
                             let padre = elite[Math.floor(Math.random() * elite.length)].ind;
                             let madre = elite[Math.floor(Math.random() * elite.length)].ind;
-
                             let hijo = {};
                             for (let color in basesActivas) {
                                 hijo[color] = Math.random() < 0.5 ? padre[color] : madre[color];
-                                
                                 let tasaMutacion = mejor.similitud < 97 ? 0.35 : 0.15;
                                 if (Math.random() < tasaMutacion) {
-                                    hijo[color] += Math.floor(Math.random() * 9) - 4;
-                                    hijo[color] = Math.max(0, Math.min(44, hijo[color]));
+                                    hijo[color] = Math.max(0, Math.min(44, hijo[color] + Math.floor(Math.random() * 9) - 4));
                                 }
                             }
                             nuevaPoblacion.push(hijo);
@@ -1198,9 +1305,7 @@ renderInventoryUI();
                         poblacion = nuevaPoblacion;
                     }
 
-                    // Calcular total de gotas
-                    let totalDrops = 0;
-                    Object.values(mejor.ind).forEach(v => totalDrops += v);
+                    let totalDrops = Object.values(mejor.ind).reduce((a, b) => a + b, 0);
                     
                     resolve({
                         ...mejor,
@@ -1209,44 +1314,148 @@ renderInventoryUI();
                 });
             }
 
-            // Ejecutar múltiples iteraciones en paralelo
+            // Ejecutar múltiples iteraciones secuenciales con progreso y auto-convergencia
             async function ejecutarMultiples() {
-                const promises = Array.from({ length: numIteraciones }, () => ejecutarUnaIteracion());
+                const progressBar = document.getElementById('progressBar');
+                const progressText = document.getElementById('progressText');
                 
-                if(recipeContainer) {
-                    recipeContainer.innerHTML = `<p style="text-align: center; color: #4166F5; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Ejecutando ${numIteraciones} iteraciones en paralelo...</p>`;
+                const maxIntentos = 3;
+                let intentosRestantes = maxIntentos;
+                let mejorSimGlobal = 0;
+                let mejorResultadoGlobal = null;
+                let consecutivosIguales = 0;
+                const intentosMaximos = 3;
+                
+                while (intentosRestantes > 0) {
+                    const numIntentos = 5;
+                    const resultadosTemp = [];
+                    
+                    if (progressText) {
+                        progressText.textContent = `Buscando... (${maxIntentos - intentosRestantes + 1}/${intentosMaximos})`;
+                    }
+                    
+                    for (let i = 0; i < numIntentos; i++) {
+                        const resultado = await ejecutarUnaIteracion();
+                        resultadosTemp.push(resultado);
+                        
+                        // Actualizar progreso
+                        const progreso = Math.round(((i + 1) / numIntentos) * 100);
+                        if (progressBar) progressBar.style.width = progreso + '%';
+                        if (progressText) progressText.textContent = `Iteración ${i + 1}/${numIntentos}`;
+                    }
+                    
+                    // Encontrar mejor de esta tanda
+                    resultadosTemp.sort((a, b) => calcularPuntuacion(b) - calcularPuntuacion(a));
+                    const mejorDeTanda = resultadosTemp[0];
+                    
+                    // Simplificar si es necesario
+                    if (mejorDeTanda.totalDrops > 30) {
+                        mejorDeTanda.ind = simplificarReceta(mejorDeTanda.ind, 25);
+                        const mezclaSimplificada = mezclar(mejorDeTanda.ind, basesActivas);
+                        mejorDeTanda.color = mezclaSimplificada;
+                        mejorDeTanda.similitud = porcentajeSimilitud(objetivo, mezclaSimplificada);
+                        mejorDeTanda.totalDrops = Object.values(mejorDeTanda.ind).reduce((a, b) => a + b, 0);
+                    }
+                    
+                    resultados.push(mejorDeTanda);
+                    
+                    // Comparar con mejor global
+                    if (mejorDeTanda.similitud > mejorSimGlobal) {
+                        mejorSimGlobal = mejorDeTanda.similitud;
+                        mejorResultadoGlobal = { ...mejorDeTanda };
+                        consecutivosIguales = 0;
+                    } else {
+                        consecutivosIguales++;
+                    }
+                    
+                    intentosRestantes--;
+                    
+                    // Si encontró algo muy bueno (>= 95%), parar
+                    if (mejorSimGlobal >= 95) break;
+                    
+                    // Si los últimos 5 intentos son iguales, parar
+                    if (consecutivosIguales >= 5) break;
                 }
                 
-                const resultadosTemp = await Promise.all(promises);
-                resultados.push(...resultadosTemp);
-
+                // Si no encontramos nada mejor que antes, usar el anterior
+                let mejorBalanceado = mejorResultadoGlobal;
+                
+                if (!mejorBalanceado || mejorBalanceado.similitud < 1) {
+                    // Fallback: usar el mejor disponible
+                    resultados.sort((a, b) => calcularPuntuacion(b) - calcularPuntuacion(a));
+                    mejorBalanceado = resultados[0];
+                }
+                
                 // Función para calcular puntuación balanceada (accuracy vs cantidad de pintura)
                 function calcularPuntuacion(resultado) {
                     const similitud = resultado.similitud;
                     const drops = resultado.totalDrops;
                     
-                    // Penalizar si tiene muchas gotas pero baja precisión
-                    // Premiar precisión, penalizar exceso de pintura
-                    // Factor de penalización por cantidad excesiva de gotas
-                    const factorDrops = drops > 30 ? 1 + ((drops - 30) * 0.02) : 1;
+                    // Penalizar agresivamente si tiene más de 30 gotas
+                    let factorDrops = 1;
+                    if (drops > 30) {
+                        factorDrops = 1 + ((drops - 30) * 0.08);
+                    } else if (drops > 20) {
+                        factorDrops = 1 + ((drops - 20) * 0.03);
+                    }
                     
-                    // Si la precisión es muy baja, penalizar fuertemente
-                    if (similitud < 90) return similitud / factorDrops;
+                    if (similitud < 85) return similitud / factorDrops;
                     
                     return similitud / factorDrops;
                 }
-
+                
                 // Ordenar por puntuación balanceada
                 resultados.sort((a, b) => calcularPuntuacion(b) - calcularPuntuacion(a));
-
-                const mejorBalanceado = resultados[0];
-                mostrarResultadoFinal(mejorBalanceado, objetivo, basesActivas, resultados);
+                
+                // SIMPLIFICAR siempre si tiene más de 30 gotas
+                if (mejorBalanceado.totalDrops > 30) {
+                    mejorBalanceado.ind = simplificarReceta(mejorBalanceado.ind, 25);
+                    const mezclaSimplificada = mezclar(mejorBalanceado.ind, basesActivas);
+                    mejorBalanceado.color = mezclaSimplificada;
+                    mejorBalanceado.similitud = porcentajeSimilitud(objetivo, mezclaSimplificada);
+                    mejorBalanceado.totalDrops = Object.values(mejorBalanceado.ind).reduce((a, b) => a + b, 0);
+                }
+                
+                // Si tenemos un resultado anterior mejor, mantenerlo
+                let seMantuvoAnterior = false;
+                if (ultimoMejorResultado && 
+                    ultimoMejorResultado.targetHex === rgbToHex(objetivo) &&
+                    ultimoMejorResultado.similitud > mejorBalanceado.similitud) {
+                    
+                    // Verificar que todos los colores aún existen
+                    let coloresValidos = true;
+                    for (let color in ultimoMejorResultado.ind) {
+                        if (!basesActivas[color]) {
+                            coloresValidos = false;
+                            break;
+                        }
+                    }
+                    
+                    if (coloresValidos) {
+                        mejorBalanceado = ultimoMejorResultado;
+                        seMantuvoAnterior = true;
+                    } else {
+                        // Los colores cambiaron, no mantener
+                        ultimoMejorResultado = null;
+                    }
+                } else {
+                    // Guardar como nuevo mejor
+                    ultimoMejorResultado = {
+                        ind: { ...mejorBalanceado.ind },
+                        color: { ...mejorBalanceado.color },
+                        similitud: mejorBalanceado.similitud,
+                        totalDrops: mejorBalanceado.totalDrops,
+                        targetHex: rgbToHex(objetivo)
+                    };
+                }
+                
+                mostrarResultadoFinal(mejorBalanceado, objetivo, basesActivas, resultados, seMantuvoAnterior);
             }
 
             ejecutarMultiples();
         }
 
-        function mostrarResultadoFinal(mejor, objetivo, basesActivas, todosResultados = null) {
+        function mostrarResultadoFinal(mejor, objetivo, basesActivas, todosResultados = null, seMantuvoAnterior = false) {
             if(!recipeContainer) return;
             const mixHex = rgbToHex(mejor.color);
             const targetHex = rgbToHex(objetivo);
@@ -1260,22 +1469,24 @@ renderInventoryUI();
                 .filter(([_, drops]) => drops > 0)
                 .sort((a, b) => b[1] - a[1]);
             
-            // Agregar al historial de sesión (después de sortedColors)
+            const recetaStr = sortedColors.map(c => c[0] + ':' + c[1]).join(', ');
+            
+            // Agregar al historial de sesión
             const entradaHistorial = {
                 id: Date.now(),
                 targetHex: targetHex,
                 mixHex: mixHex,
                 similitud: mejor.similitud,
                 totalDrops: Object.values(mejor.ind).reduce((a, b) => a + b, 0),
-                receta: sortedColors
+                receta: sortedColors,
+                recetaStr: recetaStr
             };
             historialSesion.unshift(entradaHistorial);
-            // Mantener solo los últimos 20 registros
             if (historialSesion.length > 20) historialSesion.pop();
             
             sortedColors.forEach(([color, drops]) => {
                 totalDrops += drops;
-                const colorHex = rgbToHex(basesActivas[color]);
+                const colorHex = basesActivas[color] ? rgbToHex(basesActivas[color]) : '#808080';
                 
                 recipeHTML += `
                     <div class="paint-item">
@@ -1322,8 +1533,13 @@ renderInventoryUI();
                 </div>
                 
                 <div class="tip">
-                    <i class="fas fa-info-circle"></i> <strong>Optimización:</strong> Se evaluaron ${todosResultados ? todosResultados.length : 1} muestras buscando el mejor balance entre precisión y cantidad de pintura. Rango de precisión encontrado: ${todosResultados ? Math.min(...todosResultados.map(r => r.similitud)).toFixed(1) + '% - ' + Math.max(...todosResultados.map(r => r.similitud)).toFixed(1) + '%' : mejor.similitud + '%'}.
+                    <i class="fas fa-${seMantuvoAnterior ? 'check-circle' : 'info-circle'}"></i> 
+                    <strong>${seMantuvoAnterior ? 'Mejor resultado anterior mantenido' : 'Optimización'}:</strong> 
+                    ${todosResultados ? todosResultados.length : 1} muestras | 
+                    ${seMantuvoAnterior ? 'Se mantuvo: ' + mejor.similitud.toFixed(1) + '%' : 'Rango: ' + Math.min(...todosResultados.map(r => r.similitud)).toFixed(1) + '% - ' + Math.max(...todosResultados.map(r => r.similitud)).toFixed(1) + '%'}
                 </div>
+                
+                
                 
                 <div class="history-section">
                     <div class="history-title">
@@ -1331,14 +1547,14 @@ renderInventoryUI();
                     </div>
                     <div class="history-list" id="historyList">
                         ${historialSesion.map(item => `
-                            <div class="history-item" onclick="cargarDelHistorial('${item.targetHex}')">
+                            <div class="history-item" onclick="copiarDelHistorial(${item.id})">
                                 <div class="history-color" style="background-color: ${item.targetHex};"></div>
                                 <div class="history-info">
                                     <div class="history-hex">${item.targetHex}</div>
-                                    <div class="history-details">Mezcla: ${item.mixHex} | ${item.receta.map(c => c[0] + ':' + c[1]).join(', ')}</div>
+                                    <div class="history-details">Mezcla: ${item.mixHex} | ${item.recetaStr}</div>
                                 </div>
                                 <div class="history-score">
-                                    <div class="history-accuracy" style="color: ${item.similitud >= 98 ? '#27ae60' : '#f39c12'}">${item.similitud}%</div>
+                                    <div class="history-accuracy" style="color: ${item.similitud >= 90 ? '#27ae60' : '#f39c12'}">${item.similitud.toFixed(1)}%</div>
                                     <div class="history-drops">${item.totalDrops} gotas</div>
                                 </div>
                             </div>
@@ -1357,12 +1573,22 @@ renderInventoryUI();
             }
         }
         
-        // Función global para cargar color del historial
-        window.cargarDelHistorial = function(hexColor) {
-            syncColorControls(hexColor, true);
-        };
-        
-// Función global para seleccionar una variación de color
+// Función global para copiar receta del historial
+        window.copiarDelHistorial = function(id) {
+            const item = historialSesion.find(h => h.id === id);
+            if (!item) return;
+            
+            const texto = `Objetivo: ${item.targetHex} | Mezcla: ${item.mixHex} | ${item.recetaStr} | ${item.similitud.toFixed(1)}%`;
+            navigator.clipboard.writeText(texto).then(() => {
+                const itemEl = document.querySelector(`[onclick="copiarDelHistorial(${id})"]`);
+                if (itemEl) {
+                    itemEl.style.backgroundColor = '#d4edda';
+                    setTimeout(() => itemEl.style.backgroundColor = '', 500);
+                }
+            });
+};
+
+        // Función global para seleccionar una variación de color
         window.seleccionarVariacion = function(hexColor, calcular = false, esBase = false) {
             syncColorControls(hexColor, calcular, esBase);
         };
